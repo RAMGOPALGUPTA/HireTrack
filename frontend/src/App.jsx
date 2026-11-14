@@ -31,7 +31,8 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import api from "./api";\nimport CareerStudio from "./CareerStudio";
+import api from "./api";
+import CareerStudio from "./CareerStudio";
 const statuses = [
   "WISHLIST",
   "APPLIED",
@@ -505,7 +506,8 @@ function App() {
               )}
             </div>
           )}
-          {page === "Career Studio" && <CareerStudio apps={apps} user={user} />}\n          {page === "Analytics" && (
+          {page === "Career Studio" && <CareerStudio apps={apps} user={user} />}
+          {page === "Analytics" && (
             <div className="grid">
               <div className="panel">
                 <div className="panelhead">
