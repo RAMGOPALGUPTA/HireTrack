@@ -1,1 +1,31 @@
-package com.hiretrack.controller;import com.hiretrack.service.CurrentUser;import org.springframework.web.bind.annotation.*;import java.util.Map;@RestController @RequestMapping("/api/users")public class UserController{private final CurrentUser current;public UserController(CurrentUser c){current=c;}@GetMapping("/me")public Map<String,Object> me(){var u=current.get();return Map.of("id",u.getId(),"fullName",u.getFullName(),"email",u.getEmail(),"degree",u.getDegree()==null?"":u.getDegree(),"graduationYear",u.getGraduationYear()==null?0:u.getGraduationYear());}}
+package com.hiretrack.controller;
+
+import com.hiretrack.service.CurrentUser;
+import java.util.Map;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+  private final CurrentUser current;
+
+  public UserController(CurrentUser c) {
+    current = c;
+  }
+
+  @GetMapping("/me")
+  public Map<String, Object> me() {
+    var u = current.get();
+    return Map.of(
+        "id",
+        u.getId(),
+        "fullName",
+        u.getFullName(),
+        "email",
+        u.getEmail(),
+        "degree",
+        u.getDegree() == null ? "" : u.getDegree(),
+        "graduationYear",
+        u.getGraduationYear() == null ? 0 : u.getGraduationYear());
+  }
+}

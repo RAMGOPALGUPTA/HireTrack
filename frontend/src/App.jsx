@@ -1,25 +1,745 @@
-import{useEffect,useState}from'react';import{Routes,Route,NavLink,useNavigate,Navigate}from'react-router-dom';import{LayoutDashboard,BriefcaseBusiness,CalendarDays,CheckSquare,ChartNoAxesCombined,LogOut,Plus,Search,Trash2,Pencil,ArrowUpRight}from'lucide-react';import{Area,AreaChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,PieChart,Pie,Cell,Legend}from'recharts';import api from './api';
-const statuses=['WISHLIST','APPLIED','ASSESSMENT','INTERVIEW','OFFER','REJECTED','WITHDRAWN'];const empty={companyName:'',jobRole:'',jobType:'Internship',location:'',jobLink:'',salary:'',status:'APPLIED',appliedDate:new Date().toISOString().slice(0,10),deadline:'',description:''};
-function Auth({onAuth}){const[register,setRegister]=useState(false),[form,setForm]=useState({fullName:'',email:'',password:'',degree:'',graduationYear:''}),[err,setErr]=useState('');const nav=useNavigate();async function submit(e){e.preventDefault();setErr('');try{const r=await api.post('/auth/'+(register?'register':'login'),form);localStorage.setItem('hiretrack_token',r.data.token);onAuth(r.data.user);nav('/');}catch(x){setErr(x.response?.data?.message||'Unable to authenticate. Check backend and credentials.');}}return <div className="auth"><div className="authbox"><div className="brand"><i>H</i> hiretrack<span>.</span></div><small>YOUR CAREER, IN CLEAR VIEW</small><h1>{register?'Make your next move count.':'Welcome back.'}</h1><p>One organized place for every opportunity.</p><form onSubmit={submit}>{register&&<input required placeholder="Full name" value={form.fullName} onChange={e=>setForm({...form,fullName:e.target.value})}/>}<input required type="email" placeholder="Email address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/><input required minLength="8" type="password" placeholder="Password (8+ characters)" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/>{register&&<input placeholder="Degree (e.g. B.Tech CSE)" value={form.degree} onChange={e=>setForm({...form,degree:e.target.value})}/>}{err&&<div className="error">{err}</div>}<button className="primary wide">{register?'Create account':'Sign in'} <ArrowUpRight size={17}/></button></form><p className="switch">{register?'Already registered?':'New to HireTrack?'} <a onClick={()=>setRegister(!register)}>{register?'Sign in':'Create account'}</a></p></div></div>}
-function App(){const[token,setToken]=useState(localStorage.getItem('hiretrack_token')), [user,setUser]=useState(null),[page,setPage]=useState('Overview'),[apps,setApps]=useState([]),[stats,setStats]=useState(null),[monthly,setMonthly]=useState([]),[interviews,setInterviews]=useState([]),[tasks,setTasks]=useState([]),[modal,setModal]=useState(false),[form,setForm]=useState(empty),[edit,setEdit]=useState(null),[query,setQuery]=useState(''),[filter,setFilter]=useState('ALL'),[error,setError]=useState('');const nav=useNavigate();
-async function refresh(){try{const [a,s,m,i,t,u]=await Promise.all([api.get('/applications'),api.get('/dashboard/stats'),api.get('/analytics/monthly'),api.get('/interviews'),api.get('/tasks'),api.get('/users/me')]);setApps(a.data);setStats(s.data);setMonthly(m.data);setInterviews(i.data);setTasks(t.data);setUser(u.data);}catch(e){if(e.response?.status===401){logout();}else setError('Cannot reach API. Start Spring Boot and PostgreSQL.');}}
-useEffect(()=>{if(token)refresh();},[token]);function logout(){localStorage.removeItem('hiretrack_token');setToken(null);setUser(null);nav('/login');}
-if(!token)return <Auth onAuth={u=>{setUser(u);setToken(localStorage.getItem('hiretrack_token'));}}/>;
-const openNew=()=>{setEdit(null);setForm(empty);setModal(true);};const openEdit=a=>{setEdit(a.id);setForm({...empty,...a,salary:a.salary??''});setModal(true);};
-async function save(e){e.preventDefault();try{const payload={...form,salary:form.salary===''?null:Number(form.salary)};if(edit)await api.put('/applications/'+edit,payload);else await api.post('/applications',payload);setModal(false);refresh();}catch(e){setError(e.response?.data?.message||'Save failed');}}
-async function status(id,value){await api.patch('/applications/'+id+'/status',{status:value});refresh();}
-async function remove(id){if(confirm('Delete this application?')){await api.delete('/applications/'+id);refresh();}}
-const filtered=apps.filter(a=>(filter==='ALL'||a.status===filter)&&[a.companyName,a.jobRole,a.location].join(' ').toLowerCase().includes(query.toLowerCase()));
-const menu=[['Overview',LayoutDashboard],['Applications',BriefcaseBusiness],['Interviews',CalendarDays],['Tasks',CheckSquare],['Analytics',ChartNoAxesCombined]];
-const badge=s=><span className={'badge '+(s||'').toLowerCase()}>{(s||'').toLowerCase()}</span>;
-const title=page==='Overview'?'Good things are in motion.':page;
-return <div className="shell"><aside><div className="brand"><i>H</i> hiretrack<span>.</span></div><label>WORKSPACE</label>{menu.map(([n,I])=><button key={n} className={'nav '+(page===n?'selected':'')} onClick={()=>setPage(n)}><I size={18}/>{n}</button>)}<div className="sidebottom"><div className="tip"><b>✦ Keep moving forward</b><p>Small, consistent steps make a strong career journey.</p></div><div className="user"><div className="avatar">{(user?.fullName||'U')[0]}</div><div><b>{user?.fullName||'Your account'}</b><small>{user?.email||''}</small></div><button onClick={logout} title="Sign out"><LogOut size={16}/></button></div></div></aside><main><header><span>Workspace　/　<b>{page}</b></span><div><span className="searchhint"><Search size={15}/> Your career workspace</span><div className="avatar">{(user?.fullName||'U')[0]}</div></div></header><section className="content">{error&&<div className="error">{error}</div>}<div className="heading"><div><small>YOUR CAREER AT A GLANCE</small><h1>{title}</h1><p>Stay organized, stay prepared, and make your next move count.</p></div>{(page==='Overview'||page==='Applications')&&<button className="primary" onClick={openNew}><Plus size={17}/> Add application</button>}</div>
-{page==='Overview'&&<><div className="stats">{[['Applications',stats?.totalApplications??'—','blue'],['In progress',stats?.activeApplications??'—','violet'],['Interviews',stats?.upcomingInterviews??'—','orange'],['Offers',stats?.offers??'—','green']].map(([n,v,c])=><div className="stat" key={n}><span className={'staticon '+c}><BriefcaseBusiness size={18}/></span><small>{n}</small><strong>{v}</strong><em>Current pipeline</em></div>)}</div><div className="grid"><div className="panel"><div className="panelhead"><div><h3>Application activity</h3><p>Applications over the last six months</p></div><span className="tag">6 months</span></div><div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthly}><defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#5578ed" stopOpacity=".2"/><stop offset="100%" stopColor="#5578ed" stopOpacity="0"/></linearGradient></defs><CartesianGrid stroke="#eef0f5" vertical={false}/><XAxis dataKey="month" axisLine={false} tickLine={false}/><Tooltip/><Area dataKey="applications" stroke="#5578ed" fill="url(#fill)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></div></div><div className="panel"><div className="panelhead"><div><h3>Pipeline snapshot</h3><p>Current status distribution</p></div></div>{(stats?.byStatus||[]).map(x=><div className="pipeline" key={x.status}>{badge(x.status)}<div><i style={{width:(stats.totalApplications?x.count/stats.totalApplications*100:0)+'%'}}/></div><b>{x.count}</b></div>)}</div></div><ApplicationsTable items={apps.slice(0,5)} badge={badge} status={status} edit={openEdit} remove={remove}/></>}
-{page==='Applications'&&<><div className="filters"><div><Search size={16}/><input placeholder="Search company, role or location..." value={query} onChange={e=>setQuery(e.target.value)}/></div><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="ALL">All statuses</option>{statuses.map(s=><option>{s}</option>)}</select><small>{filtered.length} applications</small></div><ApplicationsTable items={filtered} badge={badge} status={status} edit={openEdit} remove={remove}/></>}
-{page==='Interviews'&&<div className="panel"><div className="panelhead"><div><h3>Interview schedule</h3><p>Your upcoming and completed conversations</p></div></div>{interviews.map(i=><div className="listrow" key={i.id}><CalendarDays/><div><b>{i.application?.companyName} · {i.application?.jobRole}</b><p>{i.roundName} · {i.interviewType} · {new Date(i.interviewDate).toLocaleString()}</p></div>{i.meetingLink&&<a href={i.meetingLink} target="_blank">Join ↗</a>}</div>)}{!interviews.length&&<Empty title="No interviews scheduled" text="Schedule interview rounds through your API or add the interview module next."/>}</div>}
-{page==='Tasks'&&<div className="panel">{tasks.map(t=><div className="listrow" key={t.id}><button className="check" onClick={async()=>{await api.patch('/tasks/'+t.id+'/complete');refresh();}}>{t.completed?'✓':'○'}</button><div><b className={t.completed?'done':''}>{t.title}</b><p>{t.description||'Career task'} · {t.dueDate?new Date(t.dueDate).toLocaleDateString():'No due date'}</p></div></div>)}{!tasks.length&&<Empty title="Your task list is clear" text="Create tasks through the tasks API to track preparation and follow-ups."/>}</div>}
-{page==='Analytics'&&<div className="grid"><div className="panel"><div className="panelhead"><div><h3>Monthly applications</h3><p>Application activity over six months</p></div></div><div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthly}><CartesianGrid stroke="#eef0f5" vertical={false}/><XAxis dataKey="month"/><Tooltip/><Area dataKey="applications" stroke="#5578ed" fill="#edf1ff"/></AreaChart></ResponsiveContainer></div></div><div className="panel"><div className="panelhead"><div><h3>Status breakdown</h3><p>How your pipeline is progressing</p></div></div><div className="chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stats?.byStatus||[]} dataKey="count" nameKey="status" innerRadius={55} outerRadius={85}>{(stats?.byStatus||[]).map((x,i)=><Cell key={x.status} fill={['#5578ed','#9b8af7','#f3b64d','#35b98a','#ef8585','#a3aab9'][i%6]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer></div><p className="muted">Interview conversion: {stats?.interviewConversion??0}% · Offer conversion: {stats?.offerConversion??0}%</p></div></div>}
-</section></main>{modal&&<div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&setModal(false)}><form className="modal" onSubmit={save}><div className="modalhead"><h2>{edit?'Edit application':'Add application'}</h2><button type="button" onClick={()=>setModal(false)}>×</button></div><div className="formgrid">{[['companyName','Company name'],['jobRole','Job role'],['location','Location'],['salary','Salary / stipend'],['appliedDate','Applied date'],['deadline','Deadline'],['jobLink','Job posting URL']].map(([k,l])=><label>{l}<input required={['companyName','jobRole'].includes(k)} type={k==='salary'?'number':k.toLowerCase().includes('date')?'date':k==='jobLink'?'url':'text'} value={form[k]??''} onChange={e=>setForm({...form,[k]:e.target.value})}/></label>)}<label>Job type<select value={form.jobType} onChange={e=>setForm({...form,jobType:e.target.value})}>{['Internship','Full-time','Part-time','Contract'].map(x=><option>{x}</option>)}</select></label><label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>{statuses.map(x=><option>{x}</option>)}</select></label></div><label className="desc">Description<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><div className="modalactions"><button type="button" className="secondary" onClick={()=>setModal(false)}>Cancel</button><button className="primary">{edit?'Save changes':'Create application'}</button></div></form></div>}</div>}
-function ApplicationsTable({items,badge,status,edit,remove}){return <div className="panel tablepanel"><div className="panelhead"><div><h3>Recent applications</h3><p>Keep track of every opportunity</p></div></div><div className="tablewrap"><table><thead><tr><th>COMPANY / ROLE</th><th>APPLIED</th><th>STATUS</th><th>LOCATION</th><th>ACTIONS</th></tr></thead><tbody>{items.map(a=><tr key={a.id}><td><b>{a.companyName}</b><small>{a.jobRole}</small></td><td>{a.appliedDate||'—'}</td><td><select className="statusselect" value={a.status} onChange={e=>status(a.id,e.target.value)}>{statuses.map(s=><option>{s}</option>)}</select></td><td>{a.location||'—'}</td><td><button className="action" onClick={()=>edit(a)}><Pencil size={15}/></button><button className="action" onClick={()=>remove(a.id)}><Trash2 size={15}/></button></td></tr>)}</tbody></table>{!items.length&&<Empty title="No applications yet" text="Add your first job opportunity to start tracking your progress."/>}</div></div>}
-function Empty({title,text}){return <div className="empty"><BriefcaseBusiness size={26}/><b>{title}</b><p>{text}</p></div>}
+import { useEffect, useState } from "react";
+import {
+  Routes,
+  Route,
+  NavLink,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
+import {
+  LayoutDashboard,
+  BriefcaseBusiness,
+  CalendarDays,
+  CheckSquare,
+  ChartNoAxesCombined,
+  LogOut,
+  Plus,
+  Search,
+  Trash2,
+  Pencil,
+  ArrowUpRight,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import api from "./api";
+const statuses = [
+  "WISHLIST",
+  "APPLIED",
+  "ASSESSMENT",
+  "INTERVIEW",
+  "OFFER",
+  "REJECTED",
+  "WITHDRAWN",
+];
+const empty = {
+  companyName: "",
+  jobRole: "",
+  jobType: "Internship",
+  location: "",
+  jobLink: "",
+  salary: "",
+  status: "APPLIED",
+  appliedDate: new Date().toISOString().slice(0, 10),
+  deadline: "",
+  description: "",
+};
+function Auth({ onAuth }) {
+  const [register, setRegister] = useState(false),
+    [form, setForm] = useState({
+      fullName: "",
+      email: "",
+      password: "",
+      degree: "",
+      graduationYear: "",
+    }),
+    [err, setErr] = useState("");
+  const nav = useNavigate();
+  async function submit(e) {
+    e.preventDefault();
+    setErr("");
+    try {
+      const r = await api.post(
+        "/auth/" + (register ? "register" : "login"),
+        form,
+      );
+      localStorage.setItem("hiretrack_token", r.data.token);
+      onAuth(r.data.user);
+      nav("/");
+    } catch (x) {
+      setErr(
+        x.response?.data?.message ||
+          "Unable to authenticate. Check backend and credentials.",
+      );
+    }
+  }
+  return (
+    <div className="auth">
+      <div className="authbox">
+        <div className="brand">
+          <i>H</i> hiretrack<span>.</span>
+        </div>
+        <small>YOUR CAREER, IN CLEAR VIEW</small>
+        <h1>{register ? "Make your next move count." : "Welcome back."}</h1>
+        <p>One organized place for every opportunity.</p>
+        <form onSubmit={submit}>
+          {register && (
+            <input
+              required
+              placeholder="Full name"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+            />
+          )}
+          <input
+            required
+            type="email"
+            placeholder="Email address"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <input
+            required
+            minLength="8"
+            type="password"
+            placeholder="Password (8+ characters)"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          {register && (
+            <input
+              placeholder="Degree (e.g. B.Tech CSE)"
+              value={form.degree}
+              onChange={(e) => setForm({ ...form, degree: e.target.value })}
+            />
+          )}
+          {err && <div className="error">{err}</div>}
+          <button className="primary wide">
+            {register ? "Create account" : "Sign in"} <ArrowUpRight size={17} />
+          </button>
+        </form>
+        <p className="switch">
+          {register ? "Already registered?" : "New to HireTrack?"}{" "}
+          <a onClick={() => setRegister(!register)}>
+            {register ? "Sign in" : "Create account"}
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}
+function App() {
+  const [token, setToken] = useState(localStorage.getItem("hiretrack_token")),
+    [user, setUser] = useState(null),
+    [page, setPage] = useState("Overview"),
+    [apps, setApps] = useState([]),
+    [stats, setStats] = useState(null),
+    [monthly, setMonthly] = useState([]),
+    [interviews, setInterviews] = useState([]),
+    [tasks, setTasks] = useState([]),
+    [modal, setModal] = useState(false),
+    [form, setForm] = useState(empty),
+    [edit, setEdit] = useState(null),
+    [query, setQuery] = useState(""),
+    [filter, setFilter] = useState("ALL"),
+    [error, setError] = useState("");
+  const nav = useNavigate();
+  async function refresh() {
+    try {
+      const [a, s, m, i, t, u] = await Promise.all([
+        api.get("/applications"),
+        api.get("/dashboard/stats"),
+        api.get("/analytics/monthly"),
+        api.get("/interviews"),
+        api.get("/tasks"),
+        api.get("/users/me"),
+      ]);
+      setApps(a.data);
+      setStats(s.data);
+      setMonthly(m.data);
+      setInterviews(i.data);
+      setTasks(t.data);
+      setUser(u.data);
+    } catch (e) {
+      if (e.response?.status === 401) {
+        logout();
+      } else setError("Cannot reach API. Start Spring Boot and PostgreSQL.");
+    }
+  }
+  useEffect(() => {
+    if (token) refresh();
+  }, [token]);
+  function logout() {
+    localStorage.removeItem("hiretrack_token");
+    setToken(null);
+    setUser(null);
+    nav("/login");
+  }
+  if (!token)
+    return (
+      <Auth
+        onAuth={(u) => {
+          setUser(u);
+          setToken(localStorage.getItem("hiretrack_token"));
+        }}
+      />
+    );
+  const openNew = () => {
+    setEdit(null);
+    setForm(empty);
+    setModal(true);
+  };
+  const openEdit = (a) => {
+    setEdit(a.id);
+    setForm({ ...empty, ...a, salary: a.salary ?? "" });
+    setModal(true);
+  };
+  async function save(e) {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...form,
+        salary: form.salary === "" ? null : Number(form.salary),
+      };
+      if (edit) await api.put("/applications/" + edit, payload);
+      else await api.post("/applications", payload);
+      setModal(false);
+      refresh();
+    } catch (e) {
+      setError(e.response?.data?.message || "Save failed");
+    }
+  }
+  async function status(id, value) {
+    await api.patch("/applications/" + id + "/status", { status: value });
+    refresh();
+  }
+  async function remove(id) {
+    if (confirm("Delete this application?")) {
+      await api.delete("/applications/" + id);
+      refresh();
+    }
+  }
+  const filtered = apps.filter(
+    (a) =>
+      (filter === "ALL" || a.status === filter) &&
+      [a.companyName, a.jobRole, a.location]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  const menu = [
+    ["Overview", LayoutDashboard],
+    ["Applications", BriefcaseBusiness],
+    ["Interviews", CalendarDays],
+    ["Tasks", CheckSquare],
+    ["Analytics", ChartNoAxesCombined],
+  ];
+  const badge = (s) => (
+    <span className={"badge " + (s || "").toLowerCase()}>
+      {(s || "").toLowerCase()}
+    </span>
+  );
+  const title = page === "Overview" ? "Good things are in motion." : page;
+  return (
+    <div className="shell">
+      <aside>
+        <div className="brand">
+          <i>H</i> hiretrack<span>.</span>
+        </div>
+        <label>WORKSPACE</label>
+        {menu.map(([n, I]) => (
+          <button
+            key={n}
+            className={"nav " + (page === n ? "selected" : "")}
+            onClick={() => setPage(n)}
+          >
+            <I size={18} />
+            {n}
+          </button>
+        ))}
+        <div className="sidebottom">
+          <div className="tip">
+            <b>✦ Keep moving forward</b>
+            <p>Small, consistent steps make a strong career journey.</p>
+          </div>
+          <div className="user">
+            <div className="avatar">{(user?.fullName || "U")[0]}</div>
+            <div>
+              <b>{user?.fullName || "Your account"}</b>
+              <small>{user?.email || ""}</small>
+            </div>
+            <button onClick={logout} title="Sign out">
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
+      <main>
+        <header>
+          <span>
+            Workspace　/　<b>{page}</b>
+          </span>
+          <div>
+            <span className="searchhint">
+              <Search size={15} /> Your career workspace
+            </span>
+            <div className="avatar">{(user?.fullName || "U")[0]}</div>
+          </div>
+        </header>
+        <section className="content">
+          {error && <div className="error">{error}</div>}
+          <div className="heading">
+            <div>
+              <small>YOUR CAREER AT A GLANCE</small>
+              <h1>{title}</h1>
+              <p>
+                Stay organized, stay prepared, and make your next move count.
+              </p>
+            </div>
+            {(page === "Overview" || page === "Applications") && (
+              <button className="primary" onClick={openNew}>
+                <Plus size={17} /> Add application
+              </button>
+            )}
+          </div>
+          {page === "Overview" && (
+            <>
+              <div className="stats">
+                {[
+                  ["Applications", stats?.totalApplications ?? "—", "blue"],
+                  ["In progress", stats?.activeApplications ?? "—", "violet"],
+                  ["Interviews", stats?.upcomingInterviews ?? "—", "orange"],
+                  ["Offers", stats?.offers ?? "—", "green"],
+                ].map(([n, v, c]) => (
+                  <div className="stat" key={n}>
+                    <span className={"staticon " + c}>
+                      <BriefcaseBusiness size={18} />
+                    </span>
+                    <small>{n}</small>
+                    <strong>{v}</strong>
+                    <em>Current pipeline</em>
+                  </div>
+                ))}
+              </div>
+              <div className="grid">
+                <div className="panel">
+                  <div className="panelhead">
+                    <div>
+                      <h3>Application activity</h3>
+                      <p>Applications over the last six months</p>
+                    </div>
+                    <span className="tag">6 months</span>
+                  </div>
+                  <div className="chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthly}>
+                        <defs>
+                          <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                              offset="0%"
+                              stopColor="#5578ed"
+                              stopOpacity=".2"
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="#5578ed"
+                              stopOpacity="0"
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="#eef0f5" vertical={false} />
+                        <XAxis
+                          dataKey="month"
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip />
+                        <Area
+                          dataKey="applications"
+                          stroke="#5578ed"
+                          fill="url(#fill)"
+                          strokeWidth={2.5}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="panel">
+                  <div className="panelhead">
+                    <div>
+                      <h3>Pipeline snapshot</h3>
+                      <p>Current status distribution</p>
+                    </div>
+                  </div>
+                  {(stats?.byStatus || []).map((x) => (
+                    <div className="pipeline" key={x.status}>
+                      {badge(x.status)}
+                      <div>
+                        <i
+                          style={{
+                            width:
+                              (stats.totalApplications
+                                ? (x.count / stats.totalApplications) * 100
+                                : 0) + "%",
+                          }}
+                        />
+                      </div>
+                      <b>{x.count}</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <ApplicationsTable
+                items={apps.slice(0, 5)}
+                badge={badge}
+                status={status}
+                edit={openEdit}
+                remove={remove}
+              />
+            </>
+          )}
+          {page === "Applications" && (
+            <>
+              <div className="filters">
+                <div>
+                  <Search size={16} />
+                  <input
+                    placeholder="Search company, role or location..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                >
+                  <option value="ALL">All statuses</option>
+                  {statuses.map((s) => (
+                    <option>{s}</option>
+                  ))}
+                </select>
+                <small>{filtered.length} applications</small>
+              </div>
+              <ApplicationsTable
+                items={filtered}
+                badge={badge}
+                status={status}
+                edit={openEdit}
+                remove={remove}
+              />
+            </>
+          )}
+          {page === "Interviews" && (
+            <div className="panel">
+              <div className="panelhead">
+                <div>
+                  <h3>Interview schedule</h3>
+                  <p>Your upcoming and completed conversations</p>
+                </div>
+              </div>
+              {interviews.map((i) => (
+                <div className="listrow" key={i.id}>
+                  <CalendarDays />
+                  <div>
+                    <b>
+                      {i.application?.companyName} · {i.application?.jobRole}
+                    </b>
+                    <p>
+                      {i.roundName} · {i.interviewType} ·{" "}
+                      {new Date(i.interviewDate).toLocaleString()}
+                    </p>
+                  </div>
+                  {i.meetingLink && (
+                    <a href={i.meetingLink} target="_blank">
+                      Join ↗
+                    </a>
+                  )}
+                </div>
+              ))}
+              {!interviews.length && (
+                <Empty
+                  title="No interviews scheduled"
+                  text="Schedule interview rounds through your API or add the interview module next."
+                />
+              )}
+            </div>
+          )}
+          {page === "Tasks" && (
+            <div className="panel">
+              {tasks.map((t) => (
+                <div className="listrow" key={t.id}>
+                  <button
+                    className="check"
+                    onClick={async () => {
+                      await api.patch("/tasks/" + t.id + "/complete");
+                      refresh();
+                    }}
+                  >
+                    {t.completed ? "✓" : "○"}
+                  </button>
+                  <div>
+                    <b className={t.completed ? "done" : ""}>{t.title}</b>
+                    <p>
+                      {t.description || "Career task"} ·{" "}
+                      {t.dueDate
+                        ? new Date(t.dueDate).toLocaleDateString()
+                        : "No due date"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {!tasks.length && (
+                <Empty
+                  title="Your task list is clear"
+                  text="Create tasks through the tasks API to track preparation and follow-ups."
+                />
+              )}
+            </div>
+          )}
+          {page === "Analytics" && (
+            <div className="grid">
+              <div className="panel">
+                <div className="panelhead">
+                  <div>
+                    <h3>Monthly applications</h3>
+                    <p>Application activity over six months</p>
+                  </div>
+                </div>
+                <div className="chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthly}>
+                      <CartesianGrid stroke="#eef0f5" vertical={false} />
+                      <XAxis dataKey="month" />
+                      <Tooltip />
+                      <Area
+                        dataKey="applications"
+                        stroke="#5578ed"
+                        fill="#edf1ff"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="panel">
+                <div className="panelhead">
+                  <div>
+                    <h3>Status breakdown</h3>
+                    <p>How your pipeline is progressing</p>
+                  </div>
+                </div>
+                <div className="chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats?.byStatus || []}
+                        dataKey="count"
+                        nameKey="status"
+                        innerRadius={55}
+                        outerRadius={85}
+                      >
+                        {(stats?.byStatus || []).map((x, i) => (
+                          <Cell
+                            key={x.status}
+                            fill={
+                              [
+                                "#5578ed",
+                                "#9b8af7",
+                                "#f3b64d",
+                                "#35b98a",
+                                "#ef8585",
+                                "#a3aab9",
+                              ][i % 6]
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="muted">
+                  Interview conversion: {stats?.interviewConversion ?? 0}% ·
+                  Offer conversion: {stats?.offerConversion ?? 0}%
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      </main>
+      {modal && (
+        <div
+          className="overlay"
+          onMouseDown={(e) => e.target === e.currentTarget && setModal(false)}
+        >
+          <form className="modal" onSubmit={save}>
+            <div className="modalhead">
+              <h2>{edit ? "Edit application" : "Add application"}</h2>
+              <button type="button" onClick={() => setModal(false)}>
+                ×
+              </button>
+            </div>
+            <div className="formgrid">
+              {[
+                ["companyName", "Company name"],
+                ["jobRole", "Job role"],
+                ["location", "Location"],
+                ["salary", "Salary / stipend"],
+                ["appliedDate", "Applied date"],
+                ["deadline", "Deadline"],
+                ["jobLink", "Job posting URL"],
+              ].map(([k, l]) => (
+                <label>
+                  {l}
+                  <input
+                    required={["companyName", "jobRole"].includes(k)}
+                    type={
+                      k === "salary"
+                        ? "number"
+                        : k.toLowerCase().includes("date")
+                          ? "date"
+                          : k === "jobLink"
+                            ? "url"
+                            : "text"
+                    }
+                    value={form[k] ?? ""}
+                    onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                  />
+                </label>
+              ))}
+              <label>
+                Job type
+                <select
+                  value={form.jobType}
+                  onChange={(e) =>
+                    setForm({ ...form, jobType: e.target.value })
+                  }
+                >
+                  {["Internship", "Full-time", "Part-time", "Contract"].map(
+                    (x) => (
+                      <option>{x}</option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <label>
+                Status
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                >
+                  {statuses.map((x) => (
+                    <option>{x}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label className="desc">
+              Description
+              <textarea
+                rows="3"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </label>
+            <div className="modalactions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setModal(false)}
+              >
+                Cancel
+              </button>
+              <button className="primary">
+                {edit ? "Save changes" : "Create application"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+function ApplicationsTable({ items, badge, status, edit, remove }) {
+  return (
+    <div className="panel tablepanel">
+      <div className="panelhead">
+        <div>
+          <h3>Recent applications</h3>
+          <p>Keep track of every opportunity</p>
+        </div>
+      </div>
+      <div className="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>COMPANY / ROLE</th>
+              <th>APPLIED</th>
+              <th>STATUS</th>
+              <th>LOCATION</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((a) => (
+              <tr key={a.id}>
+                <td>
+                  <b>{a.companyName}</b>
+                  <small>{a.jobRole}</small>
+                </td>
+                <td>{a.appliedDate || "—"}</td>
+                <td>
+                  <select
+                    className="statusselect"
+                    value={a.status}
+                    onChange={(e) => status(a.id, e.target.value)}
+                  >
+                    {statuses.map((s) => (
+                      <option>{s}</option>
+                    ))}
+                  </select>
+                </td>
+                <td>{a.location || "—"}</td>
+                <td>
+                  <button className="action" onClick={() => edit(a)}>
+                    <Pencil size={15} />
+                  </button>
+                  <button className="action" onClick={() => remove(a.id)}>
+                    <Trash2 size={15} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!items.length && (
+          <Empty
+            title="No applications yet"
+            text="Add your first job opportunity to start tracking your progress."
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+function Empty({ title, text }) {
+  return (
+    <div className="empty">
+      <BriefcaseBusiness size={26} />
+      <b>{title}</b>
+      <p>{text}</p>
+    </div>
+  );
+}
 export default App;
