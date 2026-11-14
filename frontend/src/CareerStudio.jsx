@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BrainCircuit, Target, BookOpen, ShieldAlert, Sparkles, ClipboardCheck, TrendingUp, CheckCircle2, AlertTriangle, RotateCcw } from "lucide-react";
+import { BrainCircuit, Target, BookOpen, ShieldAlert, Sparkles, ClipboardCheck, TrendingUp, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const SKILLS = ["Java","Python","JavaScript","TypeScript","React","Node.js","Spring Boot","SQL","PostgreSQL","MongoDB","HTML","CSS","REST API","Git","Docker","AWS","Azure","Data Structures","Algorithms","OOP","Machine Learning","Figma","UI/UX","Testing","Linux","Communication","Problem Solving"];
 const QUESTION_BANK = {
@@ -12,7 +12,6 @@ const initialProfile = { skills: [], projects: "", resume: "", targetRole: "Soft
 const storageKey = (email) => "hiretrack_career_studio_" + (email || "guest");
 function loadProfile(email) { try { return { ...initialProfile, ...JSON.parse(localStorage.getItem(storageKey(email)) || "{}") }; } catch { return initialProfile; } }
 function scoreMatch(resume, jd) {
-  const source = (resume + " " + jd).toLowerCase();
   const jdText = jd.toLowerCase();
   const detected = SKILLS.filter(s => jdText.includes(s.toLowerCase()));
   const matched = detected.filter(s => resume.toLowerCase().includes(s.toLowerCase()));
