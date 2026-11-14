@@ -105,7 +105,7 @@ function scoreMatch(resume, jd) {
   const score = detected.length
     ? Math.round((matched.length / detected.length) * 100)
     : 0;
-  return { score, detected, matched, missing, source };
+  return { score, detected, matched, missing };
 }
 function SectionTitle({ eyebrow, title, description, icon: Icon }) {
   return (
@@ -192,13 +192,18 @@ export default function CareerStudio({ apps = [], user }) {
       );
       return;
     }
-    const result = scoreMatch(resumeText, jobText);
-    setMatch(result);
-    setNotice(
-      "Analysis complete. This is a transparent keyword-based estimate, not an employer score.",
-    );
-    const next = { ...profile, resume: resumeText };
-    saveProfile(next);
+    try {
+      const result = scoreMatch(resumeText, jobText);
+      setMatch(result);
+      setNotice(
+        "Analysis complete. This is a transparent keyword-based estimate, not an employer score.",
+      );
+      const next = { ...profile, resume: resumeText };
+      saveProfile(next);
+    } catch (error) {
+      console.error("HireTrack resume analysis failed:", error);
+      setNotice("Analysis could not complete. Check the browser console for details and try again.");
+    }
   }
   function addSkill(value) {
     const skill = value.trim();
