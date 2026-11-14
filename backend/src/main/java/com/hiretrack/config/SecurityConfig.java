@@ -5,6 +5,7 @@ import com.hiretrack.security.JwtService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.context.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.*;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -23,6 +24,8 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
+    @Value("${app.cors.allowed-origin:http://localhost:5173}")
+    private String frontendOrigin;
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -44,7 +47,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        c.setAllowedOrigins(List.of(frontendOrigin, "http://localhost:5173", "http://127.0.0.1:5173"));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
