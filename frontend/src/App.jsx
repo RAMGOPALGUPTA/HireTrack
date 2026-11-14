@@ -242,7 +242,8 @@ function App() {
     ["Applications", BriefcaseBusiness],
     ["Interviews", CalendarDays],
     ["Tasks", CheckSquare],
-    ["Analytics", ChartNoAxesCombined],\n    ["Career Studio", BrainCircuit],
+    ["Analytics", ChartNoAxesCombined],
+    ["Career Studio", BrainCircuit],
   ];
   const badge = (s) => (
     <span className={"badge " + (s || "").toLowerCase()}>
