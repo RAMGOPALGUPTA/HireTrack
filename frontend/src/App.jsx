@@ -31,7 +31,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import api from "./api";
+import api from "./api";\nimport CareerStudio from "./CareerStudio";
 const statuses = [
   "WISHLIST",
   "APPLIED",
@@ -241,7 +241,7 @@ function App() {
     ["Applications", BriefcaseBusiness],
     ["Interviews", CalendarDays],
     ["Tasks", CheckSquare],
-    ["Analytics", ChartNoAxesCombined],
+    ["Analytics", ChartNoAxesCombined],\n    ["Career Studio", BrainCircuit],
   ];
   const badge = (s) => (
     <span className={"badge " + (s || "").toLowerCase()}>
@@ -505,7 +505,7 @@ function App() {
               )}
             </div>
           )}
-          {page === "Analytics" && (
+          {page === "Career Studio" && <CareerStudio apps={apps} user={user} />}\n          {page === "Analytics" && (
             <div className="grid">
               <div className="panel">
                 <div className="panelhead">
