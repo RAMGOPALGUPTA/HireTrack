@@ -18,6 +18,7 @@ import {
   Trash2,
   Pencil,
   ArrowUpRight,
+  BrainCircuit,
 } from "lucide-react";
 import {
   Area,
