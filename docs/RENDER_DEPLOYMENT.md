@@ -42,7 +42,7 @@ In the backend service's **Environment** page, add:
 | `DB_USERNAME` | Username shown on the database Connect page |
 | `DB_PASSWORD` | Password shown on the database Connect page |
 | `JWT_SECRET` | A newly generated random secret of at least 32 characters |
-| `FRONTEND_URL` | Exact deployed frontend origin, e.g. `https://hiretrack-ui.onrender.com` |
+| `FRONTEND_URL` | Exact deployed frontend origin(s), comma-separated if using more than one, e.g. `https://hiretrack-ui.onrender.com` |
 
 Do not include a trailing slash in `FRONTEND_URL`. Do not use your local PostgreSQL password or a secret committed to Git. Save and redeploy.
 
@@ -69,10 +69,10 @@ Replace the example with the real backend URL from Step 2. Vite variables are em
 
 If the frontend URL was not known when the backend was created:
 - Open the backend Web Service → **Environment**.
-- Set `FRONTEND_URL` to the exact frontend origin (scheme + hostname only; no trailing slash or path).
+- Set `FRONTEND_URL` to the exact frontend origin (scheme + hostname only; no trailing slash or path). Multiple origins can be comma-separated.
 - Save and redeploy the backend.
 
-The backend also permits the localhost development origins.
+The backend also permits the localhost development origins. The JWT secret has no usable default: set `JWT_SECRET` to a newly generated random value of at least 32 characters or authentication will fail closed.
 
 ## 5. Verify the deployment
 
