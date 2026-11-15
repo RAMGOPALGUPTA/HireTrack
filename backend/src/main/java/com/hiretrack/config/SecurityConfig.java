@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.*;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -50,7 +51,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
         List<String> origins = Arrays.stream(frontendOrigins.split(","))
-                .map(String::trim).filter(origin -> !origin.isEmpty()).toList();
+                .map(String::trim).filter(origin -> !origin.isEmpty()).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         origins.addAll(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
         c.setAllowedOrigins(origins.stream().distinct().toList());
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
