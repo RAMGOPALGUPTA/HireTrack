@@ -20,12 +20,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.*;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 public class SecurityConfig {
-    @Value("${app.cors.allowed-origin:http://localhost:5173}")
-    private String frontendOrigin;
+    @Value("${app.cors.allowed-origins:http://localhost:5173}")
+    private String frontendOrigins;
+
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -47,9 +49,13 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of(frontendOrigin, "http://localhost:5173", "http://127.0.0.1:5173"));
+        List<String> origins = Arrays.stream(frontendOrigins.split(","))
+                .map(String::trim).filter(origin -> !origin.isEmpty()).toList();
+        origins.addAll(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        c.setAllowedOrigins(origins.stream().distinct().toList());
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("*"));
+        c.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
         s.registerCorsConfiguration("/**", c);
         return s;
